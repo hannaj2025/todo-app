@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🗒️ To-Do List with Day Tabs and Search</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #74ebd5, #9face6);
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      background: #ffffffcc;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    h1 {
+      text-align: center;
+      color: #4a148c;
+    }
+    .tabs {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .tabs button {
+      flex: 1;
+      padding: 10px;
+      margin: 2px;
+      border: none;
+      background-color: #d1c4e9;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 8px;
+    }
+    .tabs button.active {
+      background-color: #7b1fa2;
+      color: white;
+    }
+    #dateInput {
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid #4a148c;
+      font-weight: bold;
+      text-align: center;
+    }
+    #searchInput {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 2px solid #4a148c;
+    }
+    .task-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .task-controls input, .task-controls button {
+      padding: 10px;
+      border-radius: 8px;
+      border: 2px solid #4a148c;
+    }
+    .task-controls button {
+      background-color: #7b1fa2;
+      color: white;
+      cursor: pointer;
+    }
+    ol {
+      padding-left: 20px;
+    }
+    li {
+      background: #f3e5f5;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .task-text {
+      flex: 1;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    .circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #7b1fa2;
+      cursor: pointer;
+    }
+    .completed {
+      background-color: #4caf50;
+      border-color: #4caf50;
+    }
+    .delete-btn {
+      background-color: #f44336;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .due {
+      font-size: 12px;
+      color: #555;
+      width: 100%;
+      margin-top: 5px;
+    }
+    .day-label {
+      font-size: 16px;
+      font-weight: bold;
+      color: #4a148c;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🗒️ To-Do List</h1>
+  <div class="tabs" id="dayTabs"></div>
+  <div class="day-label" id="dayLabel"></div>
+  <input type="date" id="dateInput" onchange="changeDate()">
+  <input type="text" id="searchInput" placeholder="Search tasks...">
+  <div class="task-controls">
+    <input type="text" id="taskInput" placeholder="Enter task...">
+    <input type="time" id="timeInput">
+    <button onclick="addTask()">Add Task</button>
+    <button onclick="clearTasks()">Clear All</button>
+  </div>
+  <ol id="taskList"></ol>
+</div>
+<script>
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayTabs = document.getElementById("dayTabs");
+  const taskList = document.getElementById("taskList");
+  const searchInput = document.getElementById("searchInput");
+  const dateInput = document.getElementById("dateInput");
+  const taskInput = document.getElementById("taskInput");
+  const timeInput = document.getElementById("timeInput");
+  const dayLabel = document.getElementById("dayLabel");
+
+  let currentDay = days[0];
+  let dateMap = {};
+  let tasks = {};
+
+  days.forEach(day => {
+    dateMap[day] = new Date().toISOString().split("T")[0];
+    tasks[day] = {};
+  });
+
+  function renderTabs() {
+    dayTabs.innerHTML = "";
+    days.forEach(day => {
+      const btn = document.createElement("button");
+      btn.textContent = `${day}`;
+      if (day === currentDay) btn.classList.add("active");
+      btn.onclick = () => switchDay(day);
+      dayTabs.appendChild(btn);
+    });
+  }
+
+  function switchDay(day) {
+    currentDay = day;
+    renderTabs();
+    dateInput.value = dateMap[day];
+    renderTasks();
+  }
+
+  function changeDate() {
+    dateMap[currentDay] = dateInput.value;
+    renderTabs();
+    renderTasks();
+  }
+
+  function addTask() {
+    const text = taskInput.value.trim();
+    const time = timeInput.value;
+    if (!text) return;
+
+    const date = dateMap[currentDay];
+    if (!tasks[currentDay][date]) tasks[currentDay][date] = [];
+
+    tasks[currentDay][date].push({ text, time, done: false });
+    tasks[currentDay][date].sort((a, b) => a.time.localeCompare(b.time));
+
+    taskInput.value = "";
+    timeInput.value = "";
+    renderTasks();
+  }
+
+  function toggleTaskStatus(day, date, index) {
+    tasks[day][date][index].done = !tasks[day][date][index].done;
+    renderTasks();
+  }
+
+  function deleteTask(day, date, index) {
+    tasks[day][date].splice(index, 1);
+    renderTasks();
+  }
+
+  function clearTasks() {
+    const date = dateMap[currentDay];
+    tasks[currentDay][date] = [];
+    renderTasks();
+  }
+
+  function renderTasks() {
+    taskList.innerHTML = "";
+    const date = dateMap[currentDay];
+    const filter = searchInput.value.toLowerCase();
+    const currentTasks = (tasks[currentDay][date] || []).filter(task => task.text.toLowerCase().includes(filter));
+
+    dayLabel.textContent = `${currentDay} (${date})`;
+
+    currentTasks.forEach((task, i) => {
+      const li = document.createElement("li");
+      const circle = document.createElement("div");
+      circle.className = "circle";
+      if (task.done) circle.classList.add("completed");
+      circle.onclick = () => toggleTaskStatus(currentDay, date, i);
+
+      const span = document.createElement("span");
+      span.textContent = `${i + 1}. ${task.text}`;
+      span.className = "task-text";
+      span.contentEditable = true;
+
+      const due = document.createElement("div");
+      due.className = "due";
+      due.textContent = `Due: ${task.time}`;
+
+      const btn = document.createElement("button");
+      btn.textContent = "Delete";
+      btn.className = "delete-btn";
+      btn.onclick = () => deleteTask(currentDay, date, i);
+
+      li.appendChild(circle);
+      li.appendChild(span);
+      li.appendChild(btn);
+      li.appendChild(due);
+      taskList.appendChild(li);
+    });
+  }
+
+  searchInput.addEventListener("input", renderTasks);
+
+  renderTabs();
+  dateInput.value = dateMap[currentDay];
+  renderTasks();
+</script>
+</body>
+</html>
+
+
